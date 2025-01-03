@@ -1,0 +1,23 @@
+{
+    "algo_name": "SAC",
+    "train_eps": 1000,
+    "test_eps": 20,
+    "gamma": 0.99,
+    "actor_lr": 0.0002,
+    "critic_lr": 0.003,
+    "alpha_lr": 0.0003,
+    "memory_capacity": 100000,
+    "minimal_size": 1000,
+    "batch_size": 512,
+    "soft_tau": 0.005,
+    "hidden_dim": 1024,
+    "hidden_dim1": 512,
+    "seed": 1001,
+    "num_antennas": 4,
+    "num_RIS_elements": 16,
+    "num_users": 1,
+    "num_satellite": 3,
+    "power_t": 120,
+    "awgn_var": 0.01,
+    "channel_est_error": false
+}

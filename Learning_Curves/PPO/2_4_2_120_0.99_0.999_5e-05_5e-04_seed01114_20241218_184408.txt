@@ -1,0 +1,21 @@
+{
+    "algo_name": "PPO",
+    "train_eps": 8000,
+    "gamma": 0.99,
+    "lmbda": 0.999,
+    "eps": 0.2,
+    "epochs": 20,
+    "actor_lr": 5e-05,
+    "critic_lr": 0.0005,
+    "hidden_dim": 1024,
+    "hidden_dim1": 512,
+    "seed": 1114,
+    "LOAD_MODEL": false,
+    "num_antennas": 2,
+    "num_RIS_elements": 4,
+    "num_users": 1,
+    "num_satellite": 2,
+    "power_t": 120,
+    "awgn_var": 0.01,
+    "channel_est_error": false
+}
