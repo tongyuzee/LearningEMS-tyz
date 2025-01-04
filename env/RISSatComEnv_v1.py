@@ -1,11 +1,11 @@
 import numpy as np
 from gym import spaces
 import env.RISSatCom as RISSatCom
-# import RISSatCom as RISSatCom
+
 
 def scale(x):
-    return x
-    # return 1e8 * x + 1
+    # return x
+    return 1e8 * x + 1
 
 
 class RISSatComEnv:

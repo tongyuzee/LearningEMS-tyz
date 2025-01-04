@@ -210,6 +210,8 @@ class PPOContinuous:
 
         # self.actor_scheduler.step()  # 学习率衰减
         # self.critic_scheduler.step()
+        self.actor_scheduler.step()  # 学习率衰减
+        self.critic_scheduler.step()
 
     def save(self, current_time):
         torch.save(self.actor.state_dict(), PATH1 + f"actor_parameters_{current_time}.path")

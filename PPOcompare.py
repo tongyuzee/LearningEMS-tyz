@@ -278,8 +278,6 @@ def main():
         while not done:
             AOreward, _, _ = env.AO(env.h, env.H, env.g, env.sigema)
             AOr.append(AOreward)
-            AOreward0, _, _ = env.AO0(env.h, env.H, env.g)
-            AOr0.append(AOreward0)
             action = agent.take_action(state)
             next_state, reward, done, info = env.step(action)
             DRLr.append(reward)
@@ -288,14 +286,12 @@ def main():
             # episode_reward += reward
         plt.figure(figsize=(10, 6))
         plt.plot(AOr, label='AO Rewards')
-        plt.plot(AOr0, label='AO0 Rewards')
         plt.plot(DRLr, label='PPO Reward')
         # 显示图例
         plt.legend()
         plt.xlabel('time')
         plt.ylabel('Reward')
         plt.title('Reward Curve')
-        plt.show()
         plt.savefig(f"./Learning_Curves/{cfg['algo_name']}/{file_name}_compare.png")
 
     Reward_list = []
