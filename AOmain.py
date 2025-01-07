@@ -86,8 +86,8 @@ def main():
             episode_steps += 1
             # episode_reward += reward
         plt.figure(figsize=(10, 6))
-        plt.plot(AOr1, label='AO Rewards')
-        plt.plot(AOr0, label='AO0 Rewards')
+        plt.plot(AOr1, label='AO Rewards', linestyle='-',  marker='o')
+        plt.plot(AOr0, label='AO0 Rewards', linestyle='--',  marker='x')
         # plt.plot(DRLr, label='PPO Reward')
         # 显示图例
         plt.legend()
