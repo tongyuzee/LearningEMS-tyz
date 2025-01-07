@@ -278,6 +278,8 @@ def main():
         while not done:
             AOreward, _, _ = env.AO(env.h, env.H, env.g, env.sigema)
             AOr.append(AOreward)
+            AO0rwared, _, _ = env.AO0(env.h, env.H, env.g)
+            AOr0.append(AO0rwared)
             action = agent.take_action(state)
             next_state, reward, done, info = env.step(action)
             DRLr.append(reward)
@@ -286,13 +288,16 @@ def main():
             # episode_reward += reward
         plt.figure(figsize=(10, 6))
         plt.plot(AOr, label='AO Rewards')
+        plt.plot(AOr0, label='AO0 Rewards')
         plt.plot(DRLr, label='PPO Reward')
         # 显示图例
         plt.legend()
         plt.xlabel('time')
         plt.ylabel('Reward')
         plt.title('Reward Curve')
+        plt.show(block=False)
         plt.savefig(f"./Learning_Curves/{cfg['algo_name']}/{file_name}_compare.png")
+        
 
     Reward_list = []
     MaxReward_list = []
@@ -308,11 +313,6 @@ def main():
         while not done:
             action = agent.take_action(state)
             next_state, reward, done, info = env.step(action)
-
-            # if total_steps == cfg['train_eps'] - 2:
-            #     SOC_last_list.append(float(info['SOC']))
-            #     num_SOC_last += 1
-            #     agent.writer.add_scalar('SOC_last', float(info['SOC']), global_step = num_SOC_last)
 
             transition_dict['states'].append(state)
             transition_dict['actions'].append(action)

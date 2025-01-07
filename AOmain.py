@@ -1,0 +1,102 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import collections 
+import random
+import argparse
+import numpy as np
+import pandas as pd
+from torch.utils.tensorboard import SummaryWriter
+from env.PriusV0 import PriusEnv
+from env.RISSatComEnv_v1 import RISSatComEnv
+import time
+import json
+from datetime import datetime
+import time
+import matplotlib.pyplot as plt
+
+
+def get_args():
+    """ 
+        超参数
+    """
+    parser = argparse.ArgumentParser(description="hyperparameters")      
+    parser.add_argument('--algo_name', default='AO', type=str, help="name of algorithm")
+    parser.add_argument('--train_eps', default=8000, type=int, help="episodes of training")
+    parser.add_argument('--gamma', default=0.99, type=float, help="discounted factor")
+    parser.add_argument('--lmbda', default=0.999, type=float)
+    parser.add_argument('--eps', default=0.2, type=float)
+    parser.add_argument('--epochs', default=20, type=int)
+    parser.add_argument('--actor_lr', default=1e-4/2, type=float)
+    parser.add_argument('--critic_lr', default=1e-3/2, type=float)
+    parser.add_argument('--hidden_dim', default=1024, type=int)
+    parser.add_argument('--hidden_dim1', default=512, type=int)
+    parser.add_argument('--seed', default=24, type=int, help="random seed")
+
+    parser.add_argument('--LOAD_MODEL', default=True, type=bool, help="load model or not")
+
+    parser.add_argument("--num_antennas", default=2, type=int, metavar='N', help='Number of antennas in per satellite')
+    parser.add_argument("--num_RIS_elements", default=4, type=int, metavar='N', help='Number of RIS elements')
+    parser.add_argument("--num_users", default=1, type=int, metavar='N', help='Number of users')
+    parser.add_argument("--num_satellite", default=2, type=int, metavar='N', help='Number of satellite')
+    parser.add_argument("--power_t", default=120, type=float, metavar='N', help='Transmission power for the constrained optimization in dB')
+    parser.add_argument("--awgn_var", default=1e-2, type=float, metavar='G', help='Variance of the additive white Gaussian noise (default: 0.01)')
+    parser.add_argument("--channel_est_error", default=False, type=bool, help='Noisy channel estimate? (default: False)')
+
+    args = parser.parse_args([])    
+    args = {**vars(args)}          
+    return args
+
+def main():
+    # env = PriusEnv()
+    cfg = get_args()
+    current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+    file_name = f"{cfg['num_antennas']}_{cfg['num_RIS_elements']}_{cfg['num_satellite']}_{cfg['power_t']}_{cfg['gamma']}_{cfg['lmbda']}_{cfg['actor_lr']:1.0e}_{cfg['critic_lr']:1.0e}_seed{cfg['seed']:05d}_{current_time}"
+    with open(f"./Learning_Curves/{cfg['algo_name']}/{file_name}.txt", 'w') as f:
+        json.dump(cfg, f, indent=4)
+    f.close()
+
+    if cfg['seed'] is not None:
+        torch.manual_seed(cfg['seed'])
+        np.random.seed(cfg['seed'])
+        
+    env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'],cfg['seed'], AWGN_var=cfg['awgn_var'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
+
+
+    if cfg['LOAD_MODEL']:
+       
+        state = env.reset()
+        done = False
+        AOr1 = []
+        AOr0 = []
+        DRLr = []
+        episode_steps = 0
+        max_reward = -1e9
+        while not done:
+            AOreward1, _, _ = env.AO(env.h, env.H, env.g, env.sigema)
+            AOr1.append(AOreward1)
+            AO0rwared0, _, _ = env.AO0(env.h, env.H, env.g)
+            AOr0.append(AO0rwared0)
+            # action = env.sample_action()
+            # action = agent.take_action(state)
+            next_state, reward, done, info = env.step(None)
+            # DRLr.append(reward)
+            # state = next_state
+            episode_steps += 1
+            # episode_reward += reward
+        plt.figure(figsize=(10, 6))
+        plt.plot(AOr1, label='AO Rewards')
+        plt.plot(AOr0, label='AO0 Rewards')
+        # plt.plot(DRLr, label='PPO Reward')
+        # 显示图例
+        plt.legend()
+        plt.xlabel('time')
+        plt.ylabel('Reward')
+        plt.title('Reward Curve')
+        plt.show(block=False)
+        plt.savefig(f"./Learning_Curves/{cfg['algo_name']}/{file_name}.png")
+
+if __name__ == '__main__':
+    main()
+ 
