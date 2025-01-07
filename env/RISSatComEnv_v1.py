@@ -236,12 +236,13 @@ class RISSatComEnv:
             if r - r0 < -1e6:
                 raise ValueError("Reward is decreasing!")
             if np.abs(r - r0) < 1e-6:
-                return r, w, phi
+                break
             r0 = r
             # print(r - r0, '\n') 
+        return r, w, phi
 
 
-    def AO(self, h, H, g, sigma):
+    def AO_Low(self, h, H, g, sigma):
         """Alternating Optimization算法"""
         habs = np.linalg.norm(h, axis=1, keepdims=True)
         w = h / habs
@@ -249,7 +250,7 @@ class RISSatComEnv:
         # r0, _ = self.compute_reward(h, H, g, sigma, w, phi)
         r0, _ = self._compute_reward(h, H, g, w, phi)
         fs0 = 0 
-        for _ in range(1000):
+        for _ in range(100):
             f_phi = 1 + np.sum(phi * sigma, axis=1, keepdims=True)
             f_sigma = np.exp(-1j * np.angle(f_phi))
             w = w * f_sigma 
@@ -257,13 +258,14 @@ class RISSatComEnv:
             phi = np.exp(-1j * phi)
             # r, _ = self.compute_reward(h, H, g, sigma, w, phi) 
             r, _ = self._compute_reward(h, H, g, w, phi)
-            # print(r - r0,'\n', np.abs(f_sigma - fs0)) 
+            # print(r, r0, r - r0,'\n', np.abs(f_sigma - fs0)) 
             if r - r0 < -1e6:
                 raise ValueError("Reward is decreasing!")
             if np.abs(r - r0) < 1e-6 and (np.abs(f_sigma - fs0) < 1e-6).all():
-                return r, w, phi
+                break
             r0 = r
             fs0 = f_sigma
+        return r, w, phi
 
 
 if __name__ == "__main__":

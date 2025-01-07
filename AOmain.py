@@ -74,7 +74,7 @@ def main():
         episode_steps = 0
         max_reward = -1e9
         while not done:
-            AOreward1, _, _ = env.AO(env.h, env.H, env.g, env.sigema)
+            AOreward1, _, _ = env.AO_Low(env.h, env.H, env.g, env.sigema)
             AOr1.append(AOreward1)
             AO0rwared0, _, _ = env.AO0(env.h, env.H, env.g)
             AOr0.append(AO0rwared0)
@@ -84,10 +84,12 @@ def main():
             # DRLr.append(reward)
             # state = next_state
             episode_steps += 1
+            # if episode_steps > 36:
+            #     pass
             # episode_reward += reward
         plt.figure(figsize=(10, 6))
-        plt.plot(AOr1, label='AO Rewards', linestyle='-',  marker='o')
-        plt.plot(AOr0, label='AO0 Rewards', linestyle='--',  marker='x')
+        plt.plot(AOr0, label='AO Rewards', linestyle='-',  marker='o')
+        plt.plot(AOr1, label='L-AO Rewards', linestyle='-',  marker='x')
         # plt.plot(DRLr, label='PPO Reward')
         # 显示图例
         plt.legend()

@@ -276,7 +276,7 @@ def main():
         episode_steps = 0
         max_reward = -1e9
         while not done:
-            AOreward, _, _ = env.AO(env.h, env.H, env.g, env.sigema)
+            AOreward, _, _ = env.AO_Low(env.h, env.H, env.g, env.sigema)
             AOr.append(AOreward)
             AO0rwared, _, _ = env.AO0(env.h, env.H, env.g)
             AOr0.append(AO0rwared)
