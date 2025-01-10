@@ -24,6 +24,7 @@ class RISSatComEnv:
         self.N = num_antennas       # 卫星的天线数量
         self.M = num_RIS_elements   # RIS的元素数量
         self.I = num_satellites     # 卫星的数量
+        self.RISactive = bool(self.M)  # 是否使用RIS
         
         self.power_t = power_t
         self.power_r = 0
@@ -109,7 +110,8 @@ class RISSatComEnv:
         w_real = action[:self.N * self.I]
         w_imag = action[self.N * self.I:2 * self.N * self.I]
         self.w = w_real.reshape(self.I, self.N) + 1j * w_imag.reshape(self.I, self.N)
-        self.Phi = np.exp(-1j * 2 * np.pi * action[-self.T * self.M:].reshape(self.T, self.M))
+        if self.M != 0:  # 不部署RIS, 无需计算Phi
+            self.Phi = np.exp(-1j * 2 * np.pi * action[-self.T * self.M:].reshape(self.T, self.M))
 
         if (np.abs(np.linalg.norm(self.w, axis=1, keepdims=True) - 1) > 0.1).any():
             raise ValueError("The norm of w is not equal to 1!")
@@ -145,9 +147,14 @@ class RISSatComEnv:
 
     def _compute_reward(self, h, H, g, w, Phi) -> tuple:
         """根据当前状态和动作计算奖励"""
-        C = np.abs(np.sum([np.sum((h[i] + g * Phi @ H[i]) * w[i], axis=1) for i in range(self.I)]))**2
-
-        # C = np.sum([np.abs(np.sum((h[i] + g * Phi @ H[i]) * w[i])) ** 2 for i in range(self.I)])
+        if self.RISactive:  # 使用RIS的信道容量
+            C = np.abs(np.sum([np.sum((h[i] + g * Phi @ H[i]) * w[i]) for i in range(self.I)]))**2
+        else:  # 不使用RIS的信道容量
+            C = np.abs(np.sum([np.sum(h[i] * w[i]) for i in range(self.I)]))**2
+        # C = np.abs(np.sum([np.sum((h[i] + g * Phi @ H[i]) * w[i]) for i in range(self.I)]))**2
+        # # C = np.sum([np.abs(np.sum((h[i] + g * Phi @ H[i]) * w[i])) ** 2 for i in range(self.I)])
+        # C_nRIS = np.abs(np.sum([np.sum(h[i] * w[i]) for i in range(self.I)]))**2   # 不使用RIS的信道容量
+        
         self.power_r = self.power_t + 10 * np.log10(C)
         power_r = 10 ** (self.power_r / 10)
         # self.power_r = self.power_t * np.abs(np.sum((self.h + self.g * self.Phi @ self.H) * self.w)) ** 2

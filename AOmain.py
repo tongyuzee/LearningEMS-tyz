@@ -36,10 +36,10 @@ def get_args():
 
     parser.add_argument('--LOAD_MODEL', default=True, type=bool, help="load model or not")
 
-    parser.add_argument("--num_antennas", default=2, type=int, metavar='N', help='Number of antennas in per satellite')
-    parser.add_argument("--num_RIS_elements", default=64, type=int, metavar='N', help='Number of RIS elements')
+    parser.add_argument("--num_antennas", default=4, type=int, metavar='N', help='Number of antennas in per satellite')
+    parser.add_argument("--num_RIS_elements", default=10000, type=int, metavar='N', help='Number of RIS elements')
     parser.add_argument("--num_users", default=1, type=int, metavar='N', help='Number of users')
-    parser.add_argument("--num_satellite", default=1, type=int, metavar='N', help='Number of satellite')
+    parser.add_argument("--num_satellite", default=2, type=int, metavar='N', help='Number of satellite')
     parser.add_argument("--power_t", default=120, type=float, metavar='N', help='Transmission power for the constrained optimization in dB')
     parser.add_argument("--awgn_var", default=1e-2, type=float, metavar='G', help='Variance of the additive white Gaussian noise (default: 0.01)')
     parser.add_argument("--channel_est_error", default=False, type=bool, help='Noisy channel estimate? (default: False)')
@@ -61,35 +61,42 @@ def main():
         torch.manual_seed(cfg['seed'])
         np.random.seed(cfg['seed'])
         
-    env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'],cfg['seed'], AWGN_var=cfg['awgn_var'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
+    
 
 
     if cfg['LOAD_MODEL']:
-       
+
+        AOr_RIS = []
+        env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'],cfg['seed'], AWGN_var=cfg['awgn_var'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
         state = env.reset()
         done = False
-        AOr1 = []
-        AOr0 = []
-        DRLr = []
         episode_steps = 0
-        max_reward = -1e9
         while not done:
             AOreward1, _, _ = env.AO_Low(env.h, env.H, env.g, env.sigema)
-            AOr1.append(AOreward1)
-            AO0rwared0, _, _ = env.AO0(env.h, env.H, env.g)
-            AOr0.append(AO0rwared0)
-            # action = env.sample_action()
-            # action = agent.take_action(state)
+            AOr_RIS.append(AOreward1)
+            # AO0rwared0, _, _ = env.AO0(env.h, env.H, env.g)
+            # AOr0.append(AO0rwared0)
             next_state, reward, done, info = env.step(None)
-            # DRLr.append(reward)
-            # state = next_state
             episode_steps += 1
-            # if episode_steps > 36:
-            #     pass
-            # episode_reward += reward
+
+        """不部署RIS, cfg['num_RIS_elements']=0"""
+        AOr_nRIS = []
+        env = RISSatComEnv(cfg['num_antennas'], 0, cfg['num_users'], cfg['num_satellite'],cfg['seed'], AWGN_var=cfg['awgn_var'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
+        state = env.reset()
+        done = False
+        episode_steps = 0
+        while not done:
+            AOreward1, _, _ = env.AO_Low(env.h, env.H, env.g, env.sigema)
+            AOr_nRIS.append(AOreward1)
+            # AO0rwared0, _, _ = env.AO0(env.h, env.H, env.g)
+            # AOr0.append(AO0rwared0)
+            next_state, reward, done, info = env.step(None)
+            episode_steps += 1    
+
         plt.figure(figsize=(10, 6))
-        plt.plot(AOr0, label='AO Rewards', linestyle='-',  marker='o')
-        plt.plot(AOr1, label='L-AO Rewards', linestyle='-',  marker='x')
+        plt.plot(AOr_RIS, label='AO-RIS Rewards', linestyle='-',  marker='o')
+        plt.plot(AOr_nRIS, label='AO-nRIS Rewards', linestyle='-',  marker='x')
+        plt.plot(np.array(AOr_RIS) - np.array(AOr_nRIS), label='error', linestyle='-',  marker='+')
         # plt.plot(DRLr, label='PPO Reward')
         # 显示图例
         plt.legend()
