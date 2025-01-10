@@ -2,7 +2,7 @@ import numpy as np
 
 
 def aod(A, B, C):
-    """计算信号出发角"""
+    """计算信号出发角, AB与AC的夹角"""
     AB = np.array(B) - np.array(A)
     AC = np.array(C) - np.array(A)
     dot_product = np.sum(np.multiply(AB, AC), axis=1, keepdims=True)  # 按行点积
@@ -124,11 +124,13 @@ class RISSatCom:
 
         Htmp = np.sqrt(self.k / (1 + self.k)) * HLOS + np.sqrt(1 / (1 + self.k)) * HNLOS
         HH = np.array([beta_rs[i]*Htmp[i] for i in range(self.I)])
+        # HH = np.zeros(HH.shape) # 暂时不考虑RIS的影响
 
         d_tr = np.linalg.norm(np.array(self.pTR) - np.array(self.pRIS))
         gg = beta_tr * np.exp(-1j * 2 * np.pi * d_tr / self.wavelength) * np.array(np.ones(self.M))
         
         sigma = np.array([beta_rs[i] / beta_ts[i] * gg * HLOS_1[i] for i in range(self.I)])
+        # sigma = np.zeros(sigma.shape) # 暂时不考虑RIS的影响
         return hh, HH, gg.reshape(1, -1), sigma
 
     def f_sv(self, k, l, gamma):
