@@ -55,8 +55,8 @@ def get_args():
 
     parser.add_argument('--LOAD_MODEL', default=False, type=bool, help="load model or not")
 
-    parser.add_argument("--num_antennas", default=2, type=int, metavar='N', help='Number of antennas in per satellite')
-    parser.add_argument("--num_RIS_elements", default=4, type=int, metavar='N', help='Number of RIS elements')
+    parser.add_argument("--num_antennas", default=4, type=int, metavar='N', help='Number of antennas in per satellite')
+    parser.add_argument("--num_RIS_elements", default=64, type=int, metavar='N', help='Number of RIS elements')
     parser.add_argument("--num_users", default=1, type=int, metavar='N', help='Number of users')
     parser.add_argument("--num_satellite", default=2, type=int, metavar='N', help='Number of satellite')
     parser.add_argument("--power_t", default=120, type=float, metavar='N', help='Transmission power for the constrained optimization in dB')
@@ -209,9 +209,7 @@ class PPOContinuous:
             self.critic_optimizer.step()
 
         # self.actor_scheduler.step()  # 学习率衰减
-        # self.critic_scheduler.step()
-        self.actor_scheduler.step()  # 学习率衰减
-        self.critic_scheduler.step()
+        # self.critic_scheduler.step()  # 学习率衰减
 
     def save(self, current_time):
         torch.save(self.actor.state_dict(), PATH1 + f"actor_parameters_{current_time}.path")

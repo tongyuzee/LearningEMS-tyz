@@ -36,10 +36,10 @@ def get_args():
 
     parser.add_argument('--LOAD_MODEL', default=True, type=bool, help="load model or not")
 
-    parser.add_argument("--num_antennas", default=4, type=int, metavar='N', help='Number of antennas in per satellite')
+    parser.add_argument("--num_antennas", default=1, type=int, metavar='N', help='Number of antennas in per satellite')
     parser.add_argument("--num_RIS_elements", default=10000, type=int, metavar='N', help='Number of RIS elements')
     parser.add_argument("--num_users", default=1, type=int, metavar='N', help='Number of users')
-    parser.add_argument("--num_satellite", default=2, type=int, metavar='N', help='Number of satellite')
+    parser.add_argument("--num_satellite", default=3, type=int, metavar='N', help='Number of satellite')
     parser.add_argument("--power_t", default=120, type=float, metavar='N', help='Transmission power for the constrained optimization in dB')
     parser.add_argument("--awgn_var", default=1e-2, type=float, metavar='G', help='Variance of the additive white Gaussian noise (default: 0.01)')
     parser.add_argument("--channel_est_error", default=False, type=bool, help='Noisy channel estimate? (default: False)')
@@ -73,7 +73,7 @@ def main():
         episode_steps = 0
         while not done:
             AOreward1, _, _ = env.AO_Low(env.h, env.H, env.g, env.sigema)
-            AOr_RIS.append(AOreward1)
+            AOr_RIS.append(AOreward1-60)
             # AO0rwared0, _, _ = env.AO0(env.h, env.H, env.g)
             # AOr0.append(AO0rwared0)
             next_state, reward, done, info = env.step(None)
@@ -87,22 +87,23 @@ def main():
         episode_steps = 0
         while not done:
             AOreward1, _, _ = env.AO_Low(env.h, env.H, env.g, env.sigema)
-            AOr_nRIS.append(AOreward1)
+            AOr_nRIS.append(AOreward1-60)
             # AO0rwared0, _, _ = env.AO0(env.h, env.H, env.g)
             # AOr0.append(AO0rwared0)
             next_state, reward, done, info = env.step(None)
             episode_steps += 1    
 
         plt.figure(figsize=(10, 6))
-        plt.plot(AOr_RIS, label='AO-RIS Rewards', linestyle='-',  marker='o')
-        plt.plot(AOr_nRIS, label='AO-nRIS Rewards', linestyle='-',  marker='x')
-        plt.plot(np.array(AOr_RIS) - np.array(AOr_nRIS), label='error', linestyle='-',  marker='+')
+        plt.plot(AOr_RIS, label='AO-RIS Rewards', linestyle='-')
+        plt.plot(AOr_nRIS, label='AO-nRIS Rewards', linestyle='-')
+        plt.plot(np.array(AOr_RIS) - np.array(AOr_nRIS), label='error', linestyle='--')
         # plt.plot(DRLr, label='PPO Reward')
         # 显示图例
         plt.legend()
         plt.xlabel('time')
         plt.ylabel('Reward')
         plt.title('Reward Curve')
+        plt.grid(True)
         plt.show(block=False)
         plt.savefig(f"./Learning_Curves/{cfg['algo_name']}/{file_name}.png")
 
