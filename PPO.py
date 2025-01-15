@@ -51,7 +51,7 @@ def get_args():
     parser.add_argument('--critic_lr', default=1e-3/2, type=float)
     parser.add_argument('--hidden_dim', default=1024, type=int)
     parser.add_argument('--hidden_dim1', default=512, type=int)
-    parser.add_argument('--seed', default=1114, type=int, help="random seed")
+    parser.add_argument('--seed', default=516, type=int, help="random seed")
 
     parser.add_argument('--LOAD_MODEL', default=False, type=bool, help="load model or not")
 
@@ -127,8 +127,8 @@ class PPOContinuous:
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(),lr = cfg['actor_lr'])
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(),lr = cfg['critic_lr'])
 
-        self.actor_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.actor_optimizer, milestones=[175, 2425], gamma=0.1)
-        self.critic_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.critic_optimizer, milestones=[175, 2425], gamma=0.1)
+        self.actor_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.actor_optimizer, milestones=[288, 2425], gamma=0.01)
+        self.critic_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.critic_optimizer, milestones=[288, 2425], gamma=0.01)
 
         self.gamma = cfg['gamma']
         self.lmbda = cfg['lmbda']
@@ -183,7 +183,7 @@ class PPOContinuous:
         old_log_probs = action_dists.log_prob(actions)
 
         for _ in range(self.epochs):
-            # states = (states - states.mean(dim=0)) / (states.std(dim=0) + 1e-8)  # 归一化
+            states = (states - states.mean(dim=0)) / (states.std(dim=0) + 1e-8)  # 归一化
             mu, std = self.actor(states)
             action_dists = torch.distributions.Normal(mu, std)
             log_probs = action_dists.log_prob(actions)
@@ -208,8 +208,8 @@ class PPOContinuous:
             self.actor_optimizer.step()
             self.critic_optimizer.step()
 
-        # self.actor_scheduler.step()  # 学习率衰减
-        # self.critic_scheduler.step()  # 学习率衰减
+        self.actor_scheduler.step()  # 学习率衰减
+        self.critic_scheduler.step()  # 学习率衰减
 
     def save(self, current_time):
         torch.save(self.actor.state_dict(), PATH1 + f"actor_parameters_{current_time}.path")

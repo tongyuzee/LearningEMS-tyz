@@ -4,8 +4,8 @@ import env.RISSatCom as RISSatCom
 
 
 def scale(x):
-    # return x
-    return 1e8 * x + 1
+    return x
+    # return 1e8 * x + 1
 
 
 class RISSatComEnv:
@@ -141,7 +141,7 @@ class RISSatComEnv:
                 'reward': reward
             }
         self.reward = reward
-        self.episode_t += 20
+        self.episode_t += 10
 
         return self.state_space, reward, done, info
 
