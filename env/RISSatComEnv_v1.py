@@ -101,7 +101,7 @@ class RISSatComEnv:
     def step(self, action: np.ndarray) -> tuple:
         """执行动作并返回新的状态、奖励和结束标志"""
 
-        if action == None:
+        if action is None:
             """AO算法没有返回动作，仅需要当前的信道状态，信道状态与action无关"""
             action = self.sample_action()
 
