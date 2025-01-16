@@ -9,7 +9,7 @@ import pandas as pd
 from torch.utils.tensorboard import SummaryWriter
 from torch.distributions import Normal
 from env.PriusV0 import PriusEnv
-from env.RISSatComEnv import RISSatComEnv
+from env.RISSatComEnv_v1 import RISSatComEnv
 import json
 from datetime import datetime
 import time
@@ -35,6 +35,16 @@ def plot_learning_curves(Rewards, MaxReward, file_name):
     plt.show()
     plt.savefig(file_name)
     plt.close()
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 def get_args():
     """ 
@@ -157,19 +167,13 @@ class TD3:
         self.I = cfg['num_satellite']
         self.power_t = cfg['power_t']
 
-    def compute_power(self, a):
-        # 规范化功率
-        w_real = a[:self.N * self.I]
-        w_imag = a[self.N * self.I:2 * self.N * self.I]
-        wabs = np.abs(w_real + 1j * w_imag)
-        return wabs
-    
-    def compute_phase(self, a):
-        # 规范化相位矩阵
-        Phi_real = a[-2 * self.M * self.T:-self.M * self.T]
-        Phi_imag = a[-self.M * self.T:]
-        phi = np.abs(Phi_real + 1j * Phi_imag)
-        return phi
+    def compute_abs(self, a):
+        # 求w的欧几里得范数，||w||
+        w_real = a[: self.N * self.I].detach()
+        w_imag = a[self.N * self.I:2 * self.N * self.I].detach()
+        w = w_real.reshape(self.I, self.N) + 1j * w_imag.reshape(self.I, self.N)
+        
+        return torch.norm(w, dim=1, keepdim=True).expand(-1,self.N)
     
     def sample_action(self, state, env):
         self.sample_count += 1
@@ -177,13 +181,15 @@ class TD3:
             return env.sample_action()
         else:
             state = torch.tensor(state, dtype=torch.float32).unsqueeze(dim=0).to(device)
-            action = self.actor(state).cpu().data.numpy().flatten()
+            action = self.actor(state).reshape(-1)
+
+            action = torch.sigmoid(action)  # 限制在[0,1]之间
+            action = torch.clamp(action, 1e-6, 1)  # 限制在[0,1]之间
+
             # 规范化传输功率和相位矩阵
-            wabs = self.compute_power(action)
-            phi = self.compute_phase(action)
-            division_term = np.hstack([wabs, wabs, phi, phi])
-            action  = action / division_term
-            return action
+            wabs = self.compute_abs(action.detach()).reshape(-1)
+            action[: 2 * self.N * self.I] = action[: 2 * self.N * self.I] / wabs.repeat(2)
+            return action.cpu().data.numpy().reshape(-1)
 
     def update(self, transition_dict):
         state = torch.tensor(transition_dict['states'], dtype=torch.float).to(device)
@@ -248,9 +254,7 @@ def main():
     with open(f"./Learning_Curves/{cfg['algo_name']}/{file_name}.txt", 'w') as f:
         json.dump(cfg, f, indent=4)  
 
-    if cfg['seed'] is not None:
-        torch.manual_seed(cfg['seed'])
-        np.random.seed(cfg['seed'])
+    set_seed(cfg['seed'])
 
     env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'], AWGN_var=cfg['awgn_var'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
     state_dim = env.state_dim
