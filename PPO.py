@@ -36,6 +36,16 @@ def plot_learning_curves(Rewards, MaxReward, file_name):
     # plt.show()
     plt.close()
 
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
 def get_args():
     """ 
         超参数
@@ -252,9 +262,7 @@ def main():
         json.dump(cfg, f, indent=4)
     f.close()
 
-    if cfg['seed'] is not None:
-        torch.manual_seed(cfg['seed'])
-        np.random.seed(cfg['seed'])
+    set_seed(cfg['seed'])
         
     env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'],cfg['seed'], AWGN_var=cfg['awgn_var'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
     state_dim = env.state_dim

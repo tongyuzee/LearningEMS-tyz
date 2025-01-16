@@ -34,6 +34,16 @@ def plot_learning_curves(Rewards, MaxReward, file_name):
     # plt.show()
     plt.close()
 
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
 def get_args():
     """ 
         超参数
@@ -48,10 +58,10 @@ def get_args():
     parser.add_argument('--alpha_lr', default=1e-3, type=float)
     parser.add_argument('--memory_capacity', default=100000, type=int, help="memory capacity")
     parser.add_argument('--minimal_size', default=1000, type=int, help="memory capacity")
-    parser.add_argument('--batch_size', default=512, type=int)
+    parser.add_argument('--batch_size', default=1024, type=int)
     parser.add_argument('--soft_tau', default=0.005, type=float)
-    parser.add_argument('--hidden_dim', default=1024, type=int)
-    parser.add_argument('--hidden_dim1', default=512, type=int)
+    parser.add_argument('--hidden_dim', default=512, type=int)
+    parser.add_argument('--hidden_dim1', default=256, type=int)
     parser.add_argument('--seed', default=516, type=int, help="random seed")
 
     parser.add_argument("--num_antennas", default=2, type=int, metavar='N', help='Number of antennas in per satellite')
@@ -184,7 +194,7 @@ class SACContinuous:
         self.I = cfg['num_satellite']
         self.power_t = cfg['power_t']
 
-    def compute_power(self, a):
+    def compute_abs(self, a):
         # 求w的欧几里得范数，||w||
         w_real = a[: self.N * self.I].detach()
         w_imag = a[self.N * self.I:2 * self.N * self.I].detach()
@@ -205,7 +215,7 @@ class SACContinuous:
         action = torch.sigmoid(action)  # 限制在[0,1]之间
         action = torch.clamp(action, 1e-6, 1)  # 限制在[0,1]之间
 
-        wabs = self.compute_power(action.detach()).reshape(-1)
+        wabs = self.compute_abs(action.detach()).reshape(-1)
         action[: 2 * self.N * self.I] = action[: 2 * self.N * self.I] / wabs.repeat(2)
         # action = action.clamp(-1, 1)
         return action.cpu().numpy().reshape(-1)
@@ -297,10 +307,7 @@ def main():
         json.dump(cfg, f, indent=4)
     f.close()
 
-    if cfg['seed'] is not None:
-        torch.manual_seed(cfg['seed'])
-        np.random.seed(cfg['seed'])
-
+    set_seed(cfg['seed'])
 
     env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'], cfg['seed'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
     state_dim = env.state_dim
@@ -329,11 +336,6 @@ def main():
             else:
                 action = agent.take_action(state)
             next_state, reward, done, info = env.step(action)
-            
-            # if total_steps == cfg['train_eps'] - 2:
-            #     SOC_last_list.append(float(info['SOC']))
-            #     num_SOC_last += 1
-            #     agent.writer.add_scalar('SOC_last', float(info['SOC']), global_step = num_SOC_last)
 
             agent.memory.store(state, action, reward, next_state, done)
             state = next_state
@@ -344,33 +346,23 @@ def main():
             if total_steps >= cfg['test_eps']:
                 agent.update()
         # 学习率调整
-        agent.actor_scheduler.step()
-        agent.critic_1_scheduler.step()
-        agent.critic_2_scheduler.step()
-        agent.log_alpha_scheduler.step()
+        # agent.actor_scheduler.step()
+        # agent.critic_1_scheduler.step()
+        # agent.critic_2_scheduler.step()
+        # agent.log_alpha_scheduler.step()
        
-        # agent.writer.add_scalar('Cost', info['Total_cost'], global_step = total_steps)
-        # agent.writer.add_scalar('Reward', episode_reward, global_step = total_steps)
-        # agent.writer.add_scalar('SOC', info['SOC'], global_step = total_steps)
-        # Cost_list.append(info['Total_cost'])
-        # SOC_list.append(float(info['SOC']))
         if episode_reward > max_eps_reward:
             max_eps_reward = episode_reward
             agent.save(current_time)
         Reward_list.append(episode_reward)  
         MaxReward_list.append(max_reward)
-        # if total_steps == cfg['train_eps'] - 1:
-        #     agent.deal(Reward_list, Cost_list, SOC_list, SOC_last_list)
-        #     agent.save()
         eps_time = time.time()
         print(f"\nEpisode_Num:{total_steps:04d}   Episode_Steps:{episode_steps}    Episode_Time:{eps_time-start_time:07.1f}s    Max_resawr:{max_reward:.3f}    Episode_Reward:{episode_reward:.3f}\n")
         if (total_steps + 1)  % 100 == 0 :
-        # if (total_steps + 1) >2:
             np.save(f"./Learning_Curves/{cfg['algo_name']}/{file_name}_eps_{total_steps:04d}", Reward_list)
             plot_learning_curves(Reward_list, MaxReward_list, f"./Learning_Curves/{cfg['algo_name']}/{file_name}_eps_{total_steps:04d}.png")
         
     plot_learning_curves(Reward_list, MaxReward_list, f"./Learning_Curves/{cfg['algo_name']}/{file_name}.png")
-    # agent.save(current_time)
         
 
 if __name__ == '__main__':
