@@ -50,12 +50,12 @@ def get_args():
     """
     parser = argparse.ArgumentParser(description="hyperparameters")      
     parser.add_argument('--algo_name', default='SAC', type=str, help="name of algorithm")
-    parser.add_argument('--train_eps', default=1000, type=int, help="episodes of training")
+    parser.add_argument('--train_eps', default=10000, type=int, help="episodes of training")
     parser.add_argument('--test_eps', default=20, type=int, help="episodes of testing")
-    parser.add_argument('--gamma', default=0.99, type=float, help="discounted factor")
-    parser.add_argument('--actor_lr', default=1e-4, type=float)
-    parser.add_argument('--critic_lr', default=1e-3, type=float)
-    parser.add_argument('--alpha_lr', default=1e-3, type=float)
+    parser.add_argument('--gamma', default=0.9, type=float, help="discounted factor")
+    parser.add_argument('--actor_lr', default=1e-4*5, type=float)
+    parser.add_argument('--critic_lr', default=1e-3*5, type=float)
+    parser.add_argument('--alpha_lr', default=1e-3*5, type=float)
     parser.add_argument('--memory_capacity', default=100000, type=int, help="memory capacity")
     parser.add_argument('--minimal_size', default=1000, type=int, help="memory capacity")
     parser.add_argument('--batch_size', default=1024, type=int)
@@ -363,7 +363,7 @@ def main():
             plot_learning_curves(Reward_list, MaxReward_list, f"./Learning_Curves/{cfg['algo_name']}/{file_name}_eps_{total_steps:04d}.png")
         
     plot_learning_curves(Reward_list, MaxReward_list, f"./Learning_Curves/{cfg['algo_name']}/{file_name}.png")
-        
+    agent.save(current_time + '_end')    
 
 if __name__ == '__main__':
     main()

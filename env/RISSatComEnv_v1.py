@@ -4,8 +4,8 @@ import env.RISSatCom as RISSatCom
 
 
 def scale(x):
-    return x
-    # return 1e8 * x + 1
+    # return x
+    return 1e8 * x + 1
 
 
 class RISSatComEnv:
