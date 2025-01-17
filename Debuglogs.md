@@ -29,3 +29,9 @@
 修改学习率为5e-4, 5e-3, 5e-3
 
 ![学习率调整到5e-4,5e-3](./../../../../02workspace/LearningEMS-tyz/Learning_Curves/SAC/2_4_2_120_0.9_5e-04_5e-03_5e-03_seed00516_20250116_183957_eps_3999.png)
+
+SAAC与AO算法的比较如图
+
+![SAC VS AO](./../../../../02workspace/LearningEMS-tyz/Learning_Curves/SAC/2_4_2_120_0.9_5e-04_5e-03_5e-03_seed00516_20250116_183957_compare.png)
+
+**目前AO算法的总和奖励为539.85，但是SAC的总和奖励仅仅为-1386.47，相差很远。**
