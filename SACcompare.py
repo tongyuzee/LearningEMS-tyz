@@ -64,6 +64,8 @@ def get_args():
     parser.add_argument('--hidden_dim1', default=256, type=int)
     parser.add_argument('--seed', default=516, type=int, help="random seed")
 
+    parser.add_argument('--LOAD_MODEL', default=True, type=bool, help="load model or not")
+
     parser.add_argument("--num_antennas", default=2, type=int, metavar='N', help='Number of antennas in per satellite')
     parser.add_argument("--num_RIS_elements", default=4, type=int, metavar='N', help='Number of RIS elements')
     parser.add_argument("--num_users", default=1, type=int, metavar='N', help='Number of users')
@@ -299,12 +301,13 @@ class SACContinuous:
 
 
 def main():
+    # env = PriusEnv()
     cfg = get_args()
     current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
     file_name = f"{cfg['num_antennas']}_{cfg['num_RIS_elements']}_{cfg['num_satellite']}_{cfg['power_t']}_{cfg['gamma']}_{cfg['actor_lr']:1.0e}_{cfg['critic_lr']:1.0e}_{cfg['alpha_lr']:1.0e}_seed{cfg['seed']:05d}_{current_time}"
-    with open(f"./Learning_Curves/{cfg['algo_name']}/{file_name}.txt", 'w') as f:
-        json.dump(cfg, f, indent=4)
-    f.close()
+    # with open(f"./Learning_Curves/{cfg['algo_name']}/{file_name}.txt", 'w') as f:
+    #     json.dump(cfg, f, indent=4)
+    # f.close()
 
     set_seed(cfg['seed'])
 
@@ -317,6 +320,43 @@ def main():
     hidden_dim = cfg['hidden_dim']
     hidden_dim1 = cfg['hidden_dim1']
     agent = SACContinuous(state_dim, action_dim, hidden_dim, hidden_dim1, action_bound, target_entropy, cfg)
+    
+    if cfg['LOAD_MODEL']:
+        file_name = f"{cfg['num_antennas']}_{cfg['num_RIS_elements']}_{cfg['num_satellite']}_{cfg['power_t']}_{cfg['gamma']}_{cfg['actor_lr']:1.0e}_{cfg['critic_lr']:1.0e}_{cfg['alpha_lr']:1.0e}_seed{cfg['seed']:05d}_{current_time}"
+        agent.actor.load_state_dict(torch.load(PATH1 + f"actor_parameters_{current_time}.path", map_location=device, weights_only=True))
+        agent.critic_1.load_state_dict(torch.load(PATH1 + f"critic1_parameters_{current_time}.path", map_location=device, weights_only=True))
+        agent.critic_2.load_state_dict(torch.load(PATH1 + f"critic2_parameters_{current_time}.path", map_location=device, weights_only=True))
+
+        state = env.reset()
+        done = False
+        AOr = []
+        AOr0 = []
+        DRLr = []
+        episode_steps = 0
+        max_reward = -1e9
+        while not done:
+            AOreward, _, _ = env.AO_Low(env.h, env.H, env.g, env.sigema)
+            AOr.append(AOreward)
+            AO0rwared, _, _ = env.AO0(env.h, env.H, env.g)
+            AOr0.append(AO0rwared)
+            action = agent.take_action(state)
+            next_state, reward, done, info = env.step(action)
+            DRLr.append(reward)
+            state = next_state
+            episode_steps += 1
+            # episode_reward += reward
+        plt.figure(figsize=(10, 6))
+        plt.plot(AOr, label='AO Rewards')
+        plt.plot(AOr0, label='AO0 Rewards')
+        plt.plot(DRLr, label='PPO Reward')
+        # 显示图例
+        plt.legend()
+        plt.xlabel('time')
+        plt.ylabel('Reward')
+        plt.title('Reward Curve')
+        plt.show(block=False)
+        plt.savefig(f"./Learning_Curves/{cfg['algo_name']}/{file_name}_compare.png")
+        return
 
     Reward_list = []
     MaxReward_list = []
@@ -362,53 +402,7 @@ def main():
             plot_learning_curves(Reward_list, MaxReward_list, f"./Learning_Curves/{cfg['algo_name']}/{file_name}_eps_{total_steps:04d}.png")
         
     plot_learning_curves(Reward_list, MaxReward_list, f"./Learning_Curves/{cfg['algo_name']}/{file_name}.png")
-    agent.save(current_time + '_end')
-
-def compare():
-    """SACA与AO算法效果比较"""
-    cfg = get_args()
-    current_time = '20250116_183957'
-    file_name = f"{cfg['num_antennas']}_{cfg['num_RIS_elements']}_{cfg['num_satellite']}_{cfg['power_t']}_{cfg['gamma']}_{cfg['actor_lr']:1.0e}_{cfg['critic_lr']:1.0e}_{cfg['alpha_lr']:1.0e}_seed{cfg['seed']:05d}_{current_time}"
-
-    env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'], cfg['seed'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
-    state_dim = env.state_dim
-    action_dim = env.action_dim
-    # action_bound = env.action_space.high[0]
-    action_bound = 1
-    target_entropy = -env.action_dim
-    hidden_dim = cfg['hidden_dim']
-    hidden_dim1 = cfg['hidden_dim1']
-    agent = SACContinuous(state_dim, action_dim, hidden_dim, hidden_dim1, action_bound, target_entropy, cfg)
-    # 加载已有模型
-    agent.actor.load_state_dict(torch.load(PATH1 + f"actor_parameters_{current_time}.path", map_location=device, weights_only=True))
-    agent.critic_1.load_state_dict(torch.load(PATH1 + f"critic1_parameters_{current_time}.path", map_location=device, weights_only=True))
-    agent.critic_2.load_state_dict(torch.load(PATH1 + f"critic2_parameters_{current_time}.path", map_location=device, weights_only=True))
-
-    state = env.reset()
-    done = False
-    AOr = []
-    SACr = []
-    episode_steps = 0
-    while not done:
-        AOreward, _, _ = env.AO_Low(env.h, env.H, env.g, env.sigema)
-        AOr.append(AOreward-60)
-        action = agent.take_action(state)
-        next_state, reward, done, info = env.step(action)
-        SACr.append(reward-60)
-        state = next_state
-        episode_steps += 1
-        # episode_reward += reward
-    plt.figure(figsize=(10, 6))
-    plt.plot(AOr, label='AO Rewards')
-    plt.plot(SACr, label='SAC Reward')
-    plt.legend()  # 显示图例
-    plt.xlabel('time')
-    plt.ylabel('Reward')
-    plt.title('Reward Curve')
-    plt.grid(True)
-    plt.show(block=False)
-    plt.savefig(f"./Learning_Curves/{cfg['algo_name']}/{file_name}_compare.png")
+    agent.save(current_time + '_end')    
 
 if __name__ == '__main__':
-    # main()
-    compare()
+    main()

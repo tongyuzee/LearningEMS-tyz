@@ -60,9 +60,6 @@ def main():
     if cfg['seed'] is not None:
         torch.manual_seed(cfg['seed'])
         np.random.seed(cfg['seed'])
-        
-    
-
 
     if cfg['LOAD_MODEL']:
 
