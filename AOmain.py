@@ -36,8 +36,8 @@ def get_args():
 
     parser.add_argument('--LOAD_MODEL', default=True, type=bool, help="load model or not")
 
-    parser.add_argument("--num_antennas", default=2, type=int, metavar='N', help='Number of antennas in per satellite')
-    parser.add_argument("--num_RIS_elements", default=10000, type=int, metavar='N', help='Number of RIS elements')
+    parser.add_argument("--num_antennas", default=16, type=int, metavar='N', help='Number of antennas in per satellite')
+    parser.add_argument("--num_RIS_elements", default=1600, type=int, metavar='N', help='Number of RIS elements')
     parser.add_argument("--num_users", default=1, type=int, metavar='N', help='Number of users')
     parser.add_argument("--num_satellite", default=3, type=int, metavar='N', help='Number of satellite')
     parser.add_argument("--power_t", default=120, type=float, metavar='N', help='Transmission power for the constrained optimization in dB')
@@ -99,7 +99,7 @@ def main():
         plt.legend()
         plt.xlabel('time')
         plt.ylabel('Reward')
-        plt.title('Reward Curve')
+        plt.title(f"N={cfg['num_antennas']}, M={cfg['num_RIS_elements']}, I={cfg['num_satellite']}")
         plt.grid(True)
         plt.show(block=False)
         plt.savefig(f"./Learning_Curves/{cfg['algo_name']}/{file_name}.png")
