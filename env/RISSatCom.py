@@ -139,24 +139,6 @@ class RISSatCom:
         const = -1j * 2 * np.pi * l / self.wavelength  # 提取常量部分
         return np.exp(const * k_vals * gamma)  # 使用广播进行矢量化计算
         # return np.array([[np.exp(-1j * 2 * np.pi * l * i * g / self.wavelength) for i in range(int(k))] for g in np.hstack(gamma)])
-    
-    # def AO(self, h, sigma):
-    #     """Alternating Optimization算法"""
-    #     habs = np.linalg.norm(h, axis=1, keepdims=True)
-    #     w = h / habs
-    #     phi = np.exp(-1j * np.angle(np.sum(sigma * habs, axis=0)))
-    #     r0, _ = self._compute_reward(w, phi)
-    #     for _ in range(1000):
-    #         f_phi = 1 + np.sum(phi * sigma, axis=1, keepdims=True)
-    #         f_sigma = np.exp(-1j * np.angle(f_phi))
-    #         w = w * f_sigma 
-    #         phi = np.angle(np.sum(sigma * habs * f_sigma, axis=0)) - np.angle(np.sum(habs * f_sigma))
-    #         phi = np.exp(1j * phi)
-    #         r, _ = self._compute_reward(w, phi) 
-    #         if r - r0 < 1e-6:
-    #             break
-    #         pass
-
 
 # if __name__ == "__main__":
 #     sat_comm = RISSatCom(10)

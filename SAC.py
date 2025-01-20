@@ -30,6 +30,7 @@ def plot_learning_curves(Rewards, MaxReward, file_name):
     plt.ylabel('Reward')
     plt.title('Reward Curve')
     plt.legend()
+    plt.grid(True)
     plt.savefig(file_name)
     # plt.show()
     plt.close()
