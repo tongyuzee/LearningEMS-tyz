@@ -312,18 +312,8 @@ def main():
             agent.save(current_time)
 
         agent.update(transition_dict)
-
-        # agent.writer.add_scalar('Reward', episode_reward, global_step = total_steps)
-        # agent.writer.add_scalar('Cost', info['Total_cost'], global_step = total_steps)
-        # agent.writer.add_scalar('SOC', info['SOC'], global_step = total_steps)
-        # Cost_list.append(info['Total_cost'])
-        # SOC_list.append(info['SOC'])
         Reward_list.append(episode_reward)
         MaxReward_list.append(max_reward)
-        # if total_steps == cfg['train_eps'] - 1:
-        #     agent.deal(Reward_list, Cost_list, SOC_list, SOC_last_list)
-        #     agent.save()
-
         eps_time = time.time()
         print(f"\nEpisode_Num:{total_steps:04d}   Episode_Steps:{episode_steps}    Episode_Time:{eps_time-start_time:07.1f}s    Max_Reward:{max_reward:.3f}    Episode_Reward:{episode_reward:.3f}\n")
         if (total_steps + 1)  % 200 == 0 :
@@ -333,7 +323,51 @@ def main():
 
     np.save(f"./Learning_Curves/{cfg['algo_name']}/{file_name}", Reward_list)
     plot_learning_curves(Reward_list, MaxReward_list, f"./Learning_Curves/{cfg['algo_name']}/{file_name}.png")
-    # agent.save(current_time)
+    agent.save(current_time + '_end')
+
+def compare():
+    """PPO与AO算法效果比较"""
+    cfg = get_args()
+    current_time = '20241219_095228'
+    file_name = f"{cfg['num_antennas']}_{cfg['num_RIS_elements']}_{cfg['num_satellite']}_{cfg['power_t']}_{cfg['gamma']}_{cfg['lmbda']}_{cfg['actor_lr']:1.0e}_{cfg['critic_lr']:1.0e}_seed{cfg['seed']:05d}_{current_time}"
+    
+    env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'],cfg['seed'], AWGN_var=cfg['awgn_var'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
+    state_dim = env.state_dim
+    action_dim = env.action_dim
+    max_action = 1
+    hidden_dim = cfg['hidden_dim']
+    hidden_dim1 = cfg['hidden_dim1']
+    agent = PPOContinuous(state_dim, hidden_dim, hidden_dim1, action_dim, max_action, cfg)
+    agent.load(current_time)
+
+    state = env.reset()
+    done = False
+    AOLr = []
+    AOr = []
+    PPOr = []
+    episode_steps = 0
+    while not done:
+        AOreward, _, _ = env.AO_Low(env.h, env.H, env.g, env.sigema)
+        AOLr.append(AOreward)
+        AO0rwared, _, _ = env.AO0(env.h, env.H, env.g)
+        AOr.append(AO0rwared)
+        action = agent.take_action(state)
+        next_state, reward, done, info = env.step(action)
+        PPOr.append(reward)
+        state = next_state
+        episode_steps += 1
+    plt.figure(figsize=(10, 6))
+    plt.plot(AOLr, label='AO-Low Rewards')
+    plt.plot(AOr, label='AO Rewards')
+    plt.plot(PPOr, label='PPO Reward')
+    plt.legend()  # 显示图例
+    plt.xlabel('time')
+    plt.ylabel('Reward')
+    plt.title(f"N={cfg['num_antennas']}, M={cfg['num_RIS_elements']}, I={cfg['num_satellite']}")
+    plt.grid(True)
+    plt.show(block=False)
+    plt.savefig(f"./Learning_Curves/{cfg['algo_name']}/{file_name}_compare.png")
 
 if __name__ == '__main__':
     main()
+    # compare()
