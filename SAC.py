@@ -54,9 +54,9 @@ def get_args():
     parser.add_argument('--train_eps', default=10000, type=int, help="episodes of training")
     parser.add_argument('--test_eps', default=20, type=int, help="episodes of testing")
     parser.add_argument('--gamma', default=0.9, type=float, help="discounted factor")
-    parser.add_argument('--actor_lr', default=1e-4*5, type=float)
-    parser.add_argument('--critic_lr', default=1e-3*5, type=float)
-    parser.add_argument('--alpha_lr', default=1e-3*5, type=float)
+    parser.add_argument('--actor_lr', default=1e-4/2, type=float)
+    parser.add_argument('--critic_lr', default=1e-3/2, type=float)
+    parser.add_argument('--alpha_lr', default=1e-3/2, type=float)
     parser.add_argument('--memory_capacity', default=100000, type=int, help="memory capacity")
     parser.add_argument('--minimal_size', default=1000, type=int, help="memory capacity")
     parser.add_argument('--batch_size', default=1024, type=int)
@@ -366,9 +366,10 @@ def main():
     agent.save(current_time + '_end')
 
 def compare():
-    """SACA与AO算法效果比较"""
+    """SAC与AO算法效果比较"""
     cfg = get_args()
-    current_time = '20250116_183957'
+    # current_time = '20250116_183957'
+    current_time = '20250121_001638'
     file_name = f"{cfg['num_antennas']}_{cfg['num_RIS_elements']}_{cfg['num_satellite']}_{cfg['power_t']}_{cfg['gamma']}_{cfg['actor_lr']:1.0e}_{cfg['critic_lr']:1.0e}_{cfg['alpha_lr']:1.0e}_seed{cfg['seed']:05d}_{current_time}"
 
     env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'], cfg['seed'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
@@ -387,25 +388,24 @@ def compare():
 
     state = env.reset()
     done = False
-    AOr = []
+    AOLr = []
     SACr = []
     episode_steps = 0
     while not done:
         AOreward, _, _ = env.AO_Low(env.h, env.H, env.g, env.sigema)
-        AOr.append(AOreward-60)
+        AOLr.append(AOreward-60)
         action = agent.take_action(state)
         next_state, reward, done, info = env.step(action)
         SACr.append(reward-60)
         state = next_state
         episode_steps += 1
-        # episode_reward += reward
     plt.figure(figsize=(10, 6))
-    plt.plot(AOr, label='AO Rewards')
+    plt.plot(AOLr, label='AO Rewards')
     plt.plot(SACr, label='SAC Reward')
     plt.legend()  # 显示图例
     plt.xlabel('time')
     plt.ylabel('Reward')
-    plt.title('Reward Curve')
+    plt.title(f"N={cfg['num_antennas']}, M={cfg['num_RIS_elements']}, I={cfg['num_satellite']}")
     plt.grid(True)
     plt.show(block=False)
     plt.savefig(f"./Learning_Curves/{cfg['algo_name']}/{file_name}_compare.png")
