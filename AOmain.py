@@ -64,6 +64,7 @@ def main():
     if cfg['LOAD_MODEL']:
 
         AOr_RIS = []
+        AOr_RIS0 = []
         env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'],cfg['seed'], AWGN_var=cfg['awgn_var'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
         state = env.reset()
         done = False
@@ -71,13 +72,14 @@ def main():
         while not done:
             AOreward1, _, _ = env.AO_Low(env.h, env.H, env.g, env.sigema)
             AOr_RIS.append(AOreward1-60)
-            # AO0rwared0, _, _ = env.AO0(env.h, env.H, env.g)
-            # AOr0.append(AO0rwared0)
+            AO0rwared0, _, _ = env.AO0(env.h, env.H, env.g)
+            AOr_RIS0.append(AO0rwared0-60)
             next_state, reward, done, info = env.step(None)
             episode_steps += 1
 
         """不部署RIS, cfg['num_RIS_elements']=0"""
         AOr_nRIS = []
+        AOr_nRIS0 = []
         env = RISSatComEnv(cfg['num_antennas'], 0, cfg['num_users'], cfg['num_satellite'],cfg['seed'], AWGN_var=cfg['awgn_var'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
         state = env.reset()
         done = False
@@ -85,15 +87,17 @@ def main():
         while not done:
             AOreward1, _, _ = env.AO_Low(env.h, env.H, env.g, env.sigema)
             AOr_nRIS.append(AOreward1-60)
-            # AO0rwared0, _, _ = env.AO0(env.h, env.H, env.g)
-            # AOr0.append(AO0rwared0)
+            AO0rwared0, _, _ = env.AO0(env.h, env.H, env.g)
+            AOr_nRIS0.append(AO0rwared0-60)
             next_state, reward, done, info = env.step(None)
             episode_steps += 1    
 
         plt.figure(figsize=(10, 6))
-        plt.plot(AOr_RIS, label='AO-RIS Rewards', linestyle='-')
-        plt.plot(AOr_nRIS, label='AO-nRIS Rewards', linestyle='-')
-        plt.plot(np.array(AOr_RIS) - np.array(AOr_nRIS), label='error', linestyle='--')
+        plt.plot(AOr_RIS, label='AO-RIS Low', linestyle='-', color='blue')  
+        plt.plot(AOr_RIS0, label='AO-RIS Origin', linestyle='--', color='blue')  
+        plt.plot(AOr_nRIS, label='AO-nRIS Low', linestyle='-', color='green')  
+        plt.plot(AOr_nRIS0, label='AO-nRIS Origin', linestyle='--', color='green')  
+        # plt.plot(np.array(AOr_RIS) - np.array(AOr_nRIS), label='error', linestyle='--')
         # plt.plot(DRLr, label='PPO Reward')
         # 显示图例
         plt.legend()

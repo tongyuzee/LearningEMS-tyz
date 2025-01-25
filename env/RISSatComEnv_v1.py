@@ -148,11 +148,13 @@ class RISSatComEnv:
     def _compute_reward(self, h, H, g, w, Phi) -> tuple:
         """根据当前状态和动作计算奖励"""
         if self.RISactive:  # 使用RIS的信道容量
-            C = np.abs(np.sum([np.sum((h[i] + g * Phi @ H[i]) * np.conj(w[i])) for i in range(self.I)]))**2
-            # C = np.sum([np.abs(np.sum((h[i] + g * Phi @ H[i]) * w[i])) ** 2 for i in range(self.I)])
+            C = np.abs(np.sum([np.sum((h[i] + g * Phi @ H[i]) * w[i]) for i in range(self.I)]))**2
+            # C = np.abs(np.sum([np.sum((h[i] + g * Phi @ H[i]) * np.conj(w[i])) for i in range(self.I)]))**2
+            # C = np.sum([np.abs(np.sum((h[i] + g * Phi @ H[i]) * np.conj(w[i]))) ** 2 for i in range(self.I)])
         else:  # 不使用RIS的信道容量
-            C = np.abs(np.sum([np.sum(h[i] * np.conj(w[i])) for i in range(self.I)]))**2
-            # C = np.sum([np.abs(np.sum(h[i] * w[i])) ** 2 for i in range(self.I)])
+            C = np.abs(np.sum([np.sum(h[i] * w[i]) for i in range(self.I)]))**2
+            # C = np.abs(np.sum([np.sum(h[i] * np.conj(w[i])) for i in range(self.I)]))**2
+            # C = np.sum([np.abs(np.sum(h[i] * np.conj(w[i]))) ** 2 for i in range(self.I)])
         # C = np.abs(np.sum([np.sum((h[i] + g * Phi @ H[i]) * w[i]) for i in range(self.I)]))**2
         # # C = np.sum([np.abs(np.sum((h[i] + g * Phi @ H[i]) * w[i])) ** 2 for i in range(self.I)])
         # C_nRIS = np.abs(np.sum([np.sum(h[i] * w[i]) for i in range(self.I)]))**2   # 不使用RIS的信道容量
@@ -220,7 +222,7 @@ class RISSatComEnv:
     def AO0(self, h, H, g,):
         """Alternating Optimization算法"""
         habs = np.linalg.norm(h, axis=1, keepdims=True)
-        w = h / habs
+        w = np.conj(h) / habs
 
         rho = np.array([g.reshape(-1) * (H[i] @ w[i]) for i in range(self.I)])
         phi = np.angle(np.sum(rho, axis=0)) - np.angle(np.sum(h * w))
@@ -232,7 +234,7 @@ class RISSatComEnv:
             # wn = np.zeros_like(w)
             for i in range(self.I):
                 tmp = h[i] + g.reshape(-1) * Phi @ H[i]
-                w[i] = tmp / np.linalg.norm(tmp)
+                w[i] = np.conj(tmp) / np.linalg.norm(tmp)
             # tmp = h + g * Phi @ H 
             # w = tmp / np.linalg.norm(tmp, axis=1, keepdims=True)
             # print(np.sum(wn-w))
@@ -254,7 +256,7 @@ class RISSatComEnv:
     def AO_Low(self, h, H, g, sigma):
         """Alternating Optimization算法"""
         habs = np.linalg.norm(h, axis=1, keepdims=True)
-        w = h / habs
+        w = np.conj(h) / habs
         phi = np.exp(-1j * (- np.angle(np.sum(sigma * habs, axis=0, keepdims=True))))
         # r0, _ = self.compute_reward(h, H, g, sigma, w, phi)
         r0, _ = self._compute_reward(h, H, g, w, phi)
