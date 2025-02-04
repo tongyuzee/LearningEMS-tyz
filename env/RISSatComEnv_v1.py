@@ -36,7 +36,7 @@ class RISSatComEnv:
         sat_comm = RISSatCom.RISSatCom(0, T=self.T, N=self.N, M=self.M, I=self.I)
         self.h, self.H, self.g, self.sigema = sat_comm.setup_channel()
 
-        self.w = self.h / np.linalg.norm(self.h, axis=1, keepdims=True)
+        self.w = np.conj(self.h) / np.linalg.norm(self.h, axis=1, keepdims=True)
         phi = np.random.rand(self.T, self.M)
         self.Phi = np.exp(-1j * 2 * np.pi * phi)
 
@@ -76,7 +76,7 @@ class RISSatComEnv:
         sat_comm = RISSatCom.RISSatCom(self.episode_t, T=self.T, N=self.N, M=self.M, I=self.I)
         self.h, self.H, self.g, self.sigema = sat_comm.setup_channel()
 
-        self.w = self.h / np.linalg.norm(self.h, axis=1, keepdims=True)
+        self.w = np.conj(self.h) / np.linalg.norm(self.h, axis=1, keepdims=True)
         phi = np.random.rand(self.T, self.M)
         self.Phi = np.exp(-1j * 2 * np.pi * phi)
 
@@ -147,6 +147,8 @@ class RISSatComEnv:
 
     def _compute_reward(self, h, H, g, w, Phi) -> tuple:
         """根据当前状态和动作计算奖励"""
+        if (np.abs(np.linalg.norm(w, axis=1, keepdims=True) - 1) > 0.1).any():
+            raise ValueError("The norm of w is not equal to 1!")
         if self.RISactive:  # 使用RIS的信道容量
             C = np.abs(np.sum([np.sum((h[i] + g * Phi @ H[i]) * w[i]) for i in range(self.I)]))**2
             # C = np.abs(np.sum([np.sum((h[i] + g * Phi @ H[i]) * np.conj(w[i])) for i in range(self.I)]))**2
