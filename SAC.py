@@ -53,13 +53,13 @@ def get_args():
     parser.add_argument('--algo_name', default='SAC', type=str, help="name of algorithm")
     parser.add_argument('--train_eps', default=10000, type=int, help="episodes of training")
     parser.add_argument('--test_eps', default=20, type=int, help="episodes of testing")
-    parser.add_argument('--gamma', default=0.9, type=float, help="discounted factor")
-    parser.add_argument('--actor_lr', default=1e-4/2, type=float)
+    parser.add_argument('--gamma', default=0.95, type=float, help="discounted factor")
+    parser.add_argument('--actor_lr', default=1e-4, type=float)
     parser.add_argument('--critic_lr', default=1e-3/2, type=float)
     parser.add_argument('--alpha_lr', default=1e-3/2, type=float)
     parser.add_argument('--memory_capacity', default=100000, type=int, help="memory capacity")
     parser.add_argument('--minimal_size', default=1000, type=int, help="memory capacity")
-    parser.add_argument('--batch_size', default=1024, type=int)
+    parser.add_argument('--batch_size', default=512, type=int)
     parser.add_argument('--soft_tau', default=0.005, type=float)
     parser.add_argument('--hidden_dim', default=512, type=int)
     parser.add_argument('--hidden_dim1', default=256, type=int)
@@ -100,13 +100,14 @@ class PolicyNetContinuous(torch.nn.Module):
         dist = Normal(mu, std)
         normal_sample = dist.rsample()  
 
-        # action = torch.tanh(normal_sample)
-        # action = action * self.action_bound
-        action = torch.sigmoid(normal_sample)  # 限制在[0,1]之间
-        action = torch.clamp(action, 1e-6, 1)  # 限制在[0,1]之间
+        action = torch.tanh(normal_sample)
+        action = action * self.action_bound
+        # action = torch.sigmoid(normal_sample)  # 限制在[0,1]之间
+        # action = torch.clamp(action, 1e-6, 1)  # 限制在[0,1]之间
 
         log_prob = dist.log_prob(normal_sample)
         log_prob = log_prob - torch.log(1 - torch.tanh(action).pow(2) + 1e-7)
+        # log_prob = log_prob - torch.log(action * (1 - action) + 1e-7)
         log_prob = log_prob.sum(dim=-1, keepdims=True) # 计算熵 是否需要加和？
         action = action * self.action_bound
         return action, log_prob
@@ -213,8 +214,9 @@ class SACContinuous:
         state = torch.tensor(state, dtype=torch.float).to(device)
         action = self.actor(state)[0].detach().cpu()
         
-        action = torch.sigmoid(action)  # 限制在[0,1]之间
-        action = torch.clamp(action, 1e-6, 1)  # 限制在[0,1]之间
+        # 在PolicyNetContinuous的forward方法中，动作已经通过sigmoid处理并限制在[0,1]范围内。
+        # action = torch.sigmoid(action)  # 限制在[0,1]之间
+        # action = torch.clamp(action, 1e-6, 1)  # 限制在[0,1]之间
 
         wabs = self.compute_abs(action.detach()).reshape(-1)
         action[: 2 * self.N * self.I] = action[: 2 * self.N * self.I] / wabs.repeat(2)
@@ -323,7 +325,7 @@ def main():
     MaxReward_list = []
     max_eps_reward = -1e9   
     start_time = time.time()
-    for total_steps in range(cfg['train_eps']):
+    for current_episode in range(cfg['train_eps']):
         state = env.reset()
         done = False
         episode_reward = 0
@@ -331,7 +333,7 @@ def main():
         max_reward = -1e9
         while not done:
 
-            if total_steps < cfg['test_eps']: 
+            if current_episode < cfg['test_eps']: 
                 action = env.sample_action()
             else:
                 action = agent.take_action(state)
@@ -343,7 +345,7 @@ def main():
             if reward > max_reward:
                 max_reward = reward
             episode_steps += 1
-            if total_steps >= cfg['test_eps']:
+            if current_episode >= cfg['test_eps']:
                 agent.update()
         # 学习率调整
         # agent.actor_scheduler.step()
@@ -357,10 +359,10 @@ def main():
         Reward_list.append(episode_reward)  
         MaxReward_list.append(max_reward)
         eps_time = time.time()
-        print(f"\nEpisode_Num:{total_steps:04d}   Episode_Steps:{episode_steps}    Episode_Time:{eps_time-start_time:07.1f}s    Max_resawr:{max_reward:.3f}    Episode_Reward:{episode_reward:.3f}\n")
-        if (total_steps + 1)  % 100 == 0 :
-            np.save(f"./Learning_Curves/{cfg['algo_name']}/{file_name}_eps_{total_steps:04d}", Reward_list)
-            plot_learning_curves(Reward_list, MaxReward_list, f"./Learning_Curves/{cfg['algo_name']}/{file_name}_eps_{total_steps:04d}.png")
+        print(f"\nEpisode_Num:{current_episode:04d}   Episode_Steps:{episode_steps}    Episode_Time:{eps_time-start_time:07.1f}s    Max_resawr:{max_reward:.3f}    Episode_Reward:{episode_reward:.3f}\n")
+        if (current_episode + 1)  % 100 == 0 :
+            np.save(f"./Learning_Curves/{cfg['algo_name']}/{file_name}_eps_{current_episode:04d}", Reward_list)
+            plot_learning_curves(Reward_list, MaxReward_list, f"./Learning_Curves/{cfg['algo_name']}/{file_name}_eps_{current_episode:04d}.png")
         
     plot_learning_curves(Reward_list, MaxReward_list, f"./Learning_Curves/{cfg['algo_name']}/{file_name}.png")
     agent.save(current_time + '_end')
@@ -369,7 +371,8 @@ def compare():
     """SAC与AO算法效果比较"""
     cfg = get_args()
     # current_time = '20250116_183957'
-    current_time = '20250121_001638'
+    # current_time = '20250205_010139'
+    current_time = '20250205_191032'
     file_name = f"{cfg['num_antennas']}_{cfg['num_RIS_elements']}_{cfg['num_satellite']}_{cfg['power_t']}_{cfg['gamma']}_{cfg['actor_lr']:1.0e}_{cfg['critic_lr']:1.0e}_{cfg['alpha_lr']:1.0e}_seed{cfg['seed']:05d}_{current_time}"
 
     env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'], cfg['seed'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
@@ -392,7 +395,7 @@ def compare():
     SACr = []
     episode_steps = 0
     while not done:
-        AOreward, _, _ = env.AO_Low(env.h, env.H, env.g, env.sigema)
+        AOreward, w, p = env.AO_Low(env.h, env.H, env.g, env.sigema)
         AOLr.append(AOreward-60)
         action = agent.take_action(state)
         next_state, reward, done, info = env.step(action)

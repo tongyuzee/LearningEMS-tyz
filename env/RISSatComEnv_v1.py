@@ -37,8 +37,8 @@ class RISSatComEnv:
         self.h, self.H, self.g, self.sigema = sat_comm.setup_channel()
 
         self.w = np.conj(self.h) / np.linalg.norm(self.h, axis=1, keepdims=True)
-        phi = np.random.rand(self.T, self.M)
-        self.Phi = np.exp(-1j * 2 * np.pi * phi)
+        phi = np.random.rand(self.T, self.M) *2 - 1  # [-1, 1]  
+        self.Phi = np.exp(-1j * np.pi * phi)
 
         self.action_space = np.hstack((
             np.real(self.w).reshape(-1),
@@ -77,8 +77,8 @@ class RISSatComEnv:
         self.h, self.H, self.g, self.sigema = sat_comm.setup_channel()
 
         self.w = np.conj(self.h) / np.linalg.norm(self.h, axis=1, keepdims=True)
-        phi = np.random.rand(self.T, self.M)
-        self.Phi = np.exp(-1j * 2 * np.pi * phi)
+        phi = np.random.rand(self.T, self.M) * 2 - 1  # [-1, 1]
+        self.Phi = np.exp(-1j * np.pi * phi)
 
         self.action_space = np.hstack((
             np.real(self.w).reshape(-1),
