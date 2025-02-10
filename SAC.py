@@ -61,9 +61,9 @@ def get_args():
     parser.add_argument('--minimal_size', default=1000, type=int, help="memory capacity")
     parser.add_argument('--batch_size', default=512, type=int)
     parser.add_argument('--soft_tau', default=0.005, type=float)
-    parser.add_argument('--hidden_dim', default=512, type=int)
+    parser.add_argument('--hidden_dim', default=1024, type=int)
     parser.add_argument('--hidden_dim1', default=256, type=int)
-    parser.add_argument('--seed', default=516, type=int, help="random seed")
+    parser.add_argument('--seed', default=1004, type=int, help="random seed")
 
     parser.add_argument("--num_antennas", default=2, type=int, metavar='N', help='Number of antennas in per satellite')
     parser.add_argument("--num_RIS_elements", default=4, type=int, metavar='N', help='Number of RIS elements')
@@ -288,6 +288,7 @@ class SACContinuous:
         torch.save(self.critic_2.state_dict(), PATH1 + f"critic2_parameters_{current_time}.path")
         print("====================================")
         print("Model has been saved!!!")
+        print(f"Mdoel name: {current_time}")
         print("====================================")
 
     def deal(self, list0, list1, list2, list3):
@@ -311,7 +312,8 @@ def main():
 
     set_seed(cfg['seed'])
 
-    env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'], cfg['seed'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
+    env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'], cfg['seed'], 
+                       power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'], algo_name=cfg['algo_name'])
     state_dim = env.state_dim
     action_dim = env.action_dim
     # action_bound = env.action_space.high[0]
@@ -323,14 +325,15 @@ def main():
 
     Reward_list = []
     MaxReward_list = []
-    max_eps_reward = -1e9   
+    max_eps_reward = -1e9
+    max_top_reward = -1e9
     start_time = time.time()
     for current_episode in range(cfg['train_eps']):
         state = env.reset()
         done = False
         episode_reward = 0
         episode_steps = 0
-        max_reward = -1e9
+        top_reward = -1e9
         while not done:
 
             if current_episode < cfg['test_eps']: 
@@ -342,8 +345,8 @@ def main():
             agent.memory.store(state, action, reward, next_state, done)
             state = next_state
             episode_reward += reward
-            if reward > max_reward:
-                max_reward = reward
+            if reward > top_reward:
+                top_reward = reward
             episode_steps += 1
             if current_episode >= cfg['test_eps']:
                 agent.update()
@@ -352,14 +355,18 @@ def main():
         # agent.critic_1_scheduler.step()
         # agent.critic_2_scheduler.step()
         # agent.log_alpha_scheduler.step()
+
+        if top_reward > max_top_reward:
+            max_top_reward = top_reward
+            agent.save(current_time + '_top')
        
         if episode_reward > max_eps_reward:
             max_eps_reward = episode_reward
-            agent.save(current_time)
+            agent.save(current_time + '_sum')
         Reward_list.append(episode_reward)  
-        MaxReward_list.append(max_reward)
+        MaxReward_list.append(top_reward)
         eps_time = time.time()
-        print(f"\nEpisode_Num:{current_episode:04d}   Episode_Steps:{episode_steps}    Episode_Time:{eps_time-start_time:07.1f}s    Max_resawr:{max_reward:.3f}    Episode_Reward:{episode_reward:.3f}\n")
+        print(f"\nEpisode_Num:{current_episode:04d}   Episode_Steps:{episode_steps}    Episode_Time:{eps_time-start_time:07.1f}s    Top_resawr:{top_reward:.3f}    Episode_Reward:{episode_reward:.3f}\n")
         if (current_episode + 1)  % 100 == 0 :
             np.save(f"./Learning_Curves/{cfg['algo_name']}/{file_name}_eps_{current_episode:04d}", Reward_list)
             plot_learning_curves(Reward_list, MaxReward_list, f"./Learning_Curves/{cfg['algo_name']}/{file_name}_eps_{current_episode:04d}.png")
@@ -372,10 +379,11 @@ def compare():
     cfg = get_args()
     # current_time = '20250116_183957'
     # current_time = '20250205_010139'
-    current_time = '20250205_191032'
+    current_time = '20250210_172426_top'
     file_name = f"{cfg['num_antennas']}_{cfg['num_RIS_elements']}_{cfg['num_satellite']}_{cfg['power_t']}_{cfg['gamma']}_{cfg['actor_lr']:1.0e}_{cfg['critic_lr']:1.0e}_{cfg['alpha_lr']:1.0e}_seed{cfg['seed']:05d}_{current_time}"
 
-    env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'], cfg['seed'], power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'])
+    env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'], cfg['seed'], 
+                       power_t=cfg['power_t'], channel_est_error=cfg['channel_est_error'], algo_name=cfg['algo_name'])
     state_dim = env.state_dim
     action_dim = env.action_dim
     # action_bound = env.action_space.high[0]

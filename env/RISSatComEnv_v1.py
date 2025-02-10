@@ -3,11 +3,6 @@ from gym import spaces
 import env.RISSatCom as RISSatCom
 
 
-def scale(x):
-    # return x
-    return 1e8 * x + 1
-
-
 class RISSatComEnv:
     def __init__(self, 
                  num_antennas: int, 
@@ -18,8 +13,10 @@ class RISSatComEnv:
                  channel_est_error: bool = False, 
                  AWGN_var: float = 1e-2,
                  channel_noise_var: float = 1e-2,
-                 power_t: int = 120):
+                 power_t: int = 120,
+                 algo_name: str = 'AO'):
         
+        self.aglo_name = algo_name  # 选择算法
         self.T = num_users          # TR的天线数量
         self.N = num_antennas       # 卫星的天线数量
         self.M = num_RIS_elements   # RIS的元素数量
@@ -47,10 +44,10 @@ class RISSatComEnv:
         ))        
         self.state_space = np.hstack((
             self.action_space.reshape(-1),
-            np.real(scale(self.h)).reshape(-1),
-            np.imag(scale(self.h)).reshape(-1),
-            np.real(scale(self.H)).reshape(-1),
-            np.imag(scale(self.H)).reshape(-1),
+            np.real(self.scale(self.h)).reshape(-1),
+            np.imag(self.scale(self.h)).reshape(-1),
+            np.real(self.scale(self.H)).reshape(-1),
+            np.imag(self.scale(self.H)).reshape(-1),
             # np.real(self.g).reshape(-1),
             # np.imag(self.g).reshape(-1),
             # np.array([self.power_t, self.power_r])
@@ -87,10 +84,10 @@ class RISSatComEnv:
         ))
         self.state_space = np.hstack((
             self.action_space.reshape(-1),
-            np.real(scale(self.h)).reshape(-1),
-            np.imag(scale(self.h)).reshape(-1),
-            np.real(scale(self.H)).reshape(-1),
-            np.imag(scale(self.H)).reshape(-1),
+            np.real(self.scale(self.h)).reshape(-1),
+            np.imag(self.scale(self.h)).reshape(-1),
+            np.real(self.scale(self.H)).reshape(-1),
+            np.imag(self.scale(self.H)).reshape(-1),
             # np.real(self.g).reshape(-1),
             # np.imag(self.g).reshape(-1),
             # np.array([self.power_t, self.power_r])
@@ -123,10 +120,10 @@ class RISSatComEnv:
         # 更新状态
         self.state_space = np.hstack((
             self.action_space.reshape(-1),
-            np.real(scale(self.h)).reshape(-1),
-            np.imag(scale(self.h)).reshape(-1),
-            np.real(scale(self.H)).reshape(-1),
-            np.imag(scale(self.H)).reshape(-1),
+            np.real(self.scale(self.h)).reshape(-1),
+            np.imag(self.scale(self.h)).reshape(-1),
+            np.real(self.scale(self.H)).reshape(-1),
+            np.imag(self.scale(self.H)).reshape(-1),
             # np.real(self.g).reshape(-1),
             # np.imag(self.g).reshape(-1),
             # np.array([self.power_t, self.power_r])
@@ -279,6 +276,12 @@ class RISSatComEnv:
             r0 = r
             fs0 = f_sigma
         return r, w, phi
+    
+    def scale(self, x):
+        if self.aglo_name in ['SAC']:
+            return 1e8 * x + 1
+        else:
+            return x
 
 
 if __name__ == "__main__":
