@@ -75,3 +75,9 @@ SAC与AO算法的比较如图
 ![SAC VS AO](./../../../../02workspace/LearningEMS-tyz/Learning_Curves/SAC/2_4_2_120_0.95_1e-04_5e-04_5e-04_seed00516_20250205_191032_compare.png)
 
 **目前AO算法的总和奖励为1316.65，但是SAC的总和奖励仅仅为1200左右，还需要继续收敛。**
+
+### 2025/02/12
+
+单天线场景下，SAC的取钱与AO非常接近，但依然略低于AO。
+
+![SAC VS AO](./../../../../02workspace/LearningEMS-tyz/Learning_Curves/SAC/1_100_2_120_0.95_1e-04_5e-04_5e-04_seed01004_20250211_102101_sum_compare.png)
