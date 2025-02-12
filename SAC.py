@@ -63,7 +63,7 @@ def get_args():
     parser.add_argument('--soft_tau', default=0.005, type=float)
     parser.add_argument('--hidden_dim', default=1024, type=int)
     parser.add_argument('--hidden_dim1', default=256, type=int)
-    parser.add_argument('--seed', default=1004, type=int, help="random seed")
+    parser.add_argument('--seed', default=1114, type=int, help="random seed")
 
     parser.add_argument("--num_antennas", default=2, type=int, metavar='N', help='Number of antennas in per satellite')
     parser.add_argument("--num_RIS_elements", default=100, type=int, metavar='N', help='Number of RIS elements')
@@ -339,6 +339,7 @@ def main():
             if current_episode < cfg['test_eps']: 
                 action = env.sample_action()
             else:
+                # set_seed(cfg['seed'])
                 action = agent.take_action(state)
             next_state, reward, done, info = env.step(action)
 
@@ -379,7 +380,7 @@ def compare():
     cfg = get_args()
     # current_time = '20250116_183957'
     # current_time = '20250205_010139'
-    current_time = '20250211_110027_sum'
+    current_time = '20250211_171626_top'
     file_name = f"{cfg['num_antennas']}_{cfg['num_RIS_elements']}_{cfg['num_satellite']}_{cfg['power_t']}_{cfg['gamma']}_{cfg['actor_lr']:1.0e}_{cfg['critic_lr']:1.0e}_{cfg['alpha_lr']:1.0e}_seed{cfg['seed']:05d}_{current_time}"
 
     env = RISSatComEnv(cfg['num_antennas'], cfg['num_RIS_elements'], cfg['num_users'], cfg['num_satellite'], cfg['seed'], 

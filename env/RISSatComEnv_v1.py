@@ -65,7 +65,7 @@ class RISSatComEnv:
 
     def reset(self) -> np.ndarray:
         """重置环境以开始新的一轮"""
-        np.random.seed(self.seed)
+        # np.random.seed(self.seed)
         self.done: bool = False
         self.episode_t: int = 0
         self.reward = 0

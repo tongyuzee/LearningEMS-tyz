@@ -63,7 +63,7 @@ class RISSatCom:
         self.D = self.h + self.RE  # 卫星轨道半径，单位：米
         self.v = np.sqrt(3.986e14/self.D)  # 卫星的速度，单位：米/秒
         self.w = self.v / self.D  # 卫星的角速度，单位：弧度/秒
-        self.theta0 = 55 * np.pi / 180  # 卫星初始位置，单位：弧度
+        self.theta0 = 70 * np.pi / 180  # 卫星初始位置，单位：弧度
         self.alpha = 5 * np.pi / 180  # 卫星的角度间隔，单位：弧度
 
         self.TT = np.round((np.pi - self.theta0 - self.theta0 - self.alpha) / self.w)  # 卫星飞行时间，单位：秒n
