@@ -174,7 +174,7 @@ class RISSatComEnv:
 
     def sample_action(self):
         """随机生成一个动作"""
-        action = np.random.rand(self.action_dim)
+        action = np.random.rand(self.action_dim) * 2 - 1  # [-1, 1]
         # wabs = self.compute_power(action).repeat(self.N,axis=1).reshape(-1)
         # action[: 2 * self.N * self.I] = action[: 2 * self.N * self.I] / wabs.repeat(2)
         w = self.compute_power(action)
