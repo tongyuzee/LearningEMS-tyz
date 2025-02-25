@@ -16,7 +16,7 @@ class RISSatComEnv:
                  power_t: int = 120,
                  algo_name: str = 'AO'):
         
-        self.aglo_name = algo_name  # 选择算法
+        self.algo_name = algo_name  # 选择算法
         self.T = num_users          # TR的天线数量
         self.N = num_antennas       # 卫星的天线数量
         self.M = num_RIS_elements   # RIS的元素数量
@@ -278,7 +278,7 @@ class RISSatComEnv:
         return r, w, phi
     
     def scale(self, x):
-        if self.aglo_name in ['SAC']:
+        if self.algo_name in ['SAC']:
             return 1e8 * x + 1
         else:
             return x
