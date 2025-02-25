@@ -364,6 +364,7 @@ def main():
         if episode_reward > max_eps_reward:
             max_eps_reward = episode_reward
             agent.save(current_time + '_sum')
+            
         Reward_list.append(episode_reward)  
         MaxReward_list.append(top_reward)
         eps_time = time.time()
